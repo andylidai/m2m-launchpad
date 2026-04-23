@@ -345,7 +345,8 @@ a{color:var(--primary);text-decoration:none;}
     <div class="auth-field"><label>Password</label><input id="auth-password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAuth()" /></div>
     <button class="auth-btn" id="auth-btn" onclick="doAuth()">Sign In</button>
     <div class="auth-err" id="auth-err"></div>
-    <div class="auth-toggle">New user? <span onclick="toggleAuthMode()">Create account</span></div>
+    <div class="auth-toggle" id="auth-toggle-row">New user? <span onclick="toggleAuthMode()">Create account</span></div>
+    <div style="text-align:center;margin-top:10px"><span id="forgot-link" onclick="doForgotPassword()" style="font-size:13px;color:#6366f1;cursor:pointer;text-decoration:underline">Forgot password?</span><span id="forgot-sent" style="display:none;font-size:13px;color:#34a853">✓ Reset email sent — check your inbox</span></div>
   </div>
 </div>
 <div id="name-modal" class="hidden">
@@ -471,13 +472,21 @@ const STORAGE_KEY='m2m_academy_v2';
 // ============================================================
 const SUPABASE_URL='https://rstlqgpwglvzjpcmkxpe.supabase.co';
 const SUPABASE_KEY='sb_publishable_JpDM_KDqpJLDH6eO4xlbPg_VfgS2hR8';
-const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:'implicit'}});
 let currentUser=null;
 let authMode='signin'; // 'signin' | 'signup'
 
 // ---- Auth UI helpers ----
 function showAuthOverlay(){document.getElementById('auth-overlay').classList.remove('hidden');}
 function hideAuthOverlay(){document.getElementById('auth-overlay').classList.add('hidden');}
+window.doForgotPassword=async function(){
+  const email=document.getElementById('auth-email').value.trim();
+  if(!email){document.getElementById('auth-err').textContent='Enter your email above first.';return;}
+  document.getElementById('auth-err').textContent='';
+  await db.auth.resetPasswordForEmail(email,{redirectTo:'https://andylidai.github.io/m2m-launchpad/'});
+  document.getElementById('forgot-link').style.display='none';
+  document.getElementById('forgot-sent').style.display='inline';
+};
 window.doResetPassword=async function(){
   const pwd=document.getElementById('reset-pwd').value.trim();
   const pwd2=document.getElementById('reset-pwd2').value.trim();
