@@ -472,7 +472,7 @@ const STORAGE_KEY='m2m_academy_v2';
 // ============================================================
 const SUPABASE_URL='https://rstlqgpwglvzjpcmkxpe.supabase.co';
 const SUPABASE_KEY='sb_publishable_JpDM_KDqpJLDH6eO4xlbPg_VfgS2hR8';
-const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:'implicit'}});
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let currentUser=null;
 let authMode='signin'; // 'signin' | 'signup'
 
