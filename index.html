@@ -538,7 +538,7 @@ window.doAuth=async function(){
     if(authMode==='signin'){
       res=await db.auth.signInWithPassword({email,password:pwd});
     } else {
-      res=await db.auth.signUp({email,password:pwd,options:{emailRedirectTo:'https://m2m-launchpad.netlify.app'}});
+      res=await db.auth.signUp({email,password:pwd,options:{emailRedirectTo:'https://andylidai.github.io/m2m-launchpad/'}});
     }
     if(res.error)throw res.error;
     if(authMode==='signup'&&res.data?.user&&!res.data?.session){
