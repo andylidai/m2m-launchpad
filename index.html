@@ -1428,7 +1428,7 @@ window.submitInlineQuiz = function(brickId, selectedIdx){
     setTimeout(()=>completeBrick(brickId), 900);
   } else {
     fb.className='iq-feedback wrong';
-    fb.innerHTML='<strong>✗ Not quite.</strong> '+brick.quiz.feedback+'<br><button class="btn btn-outline" style="margin-top:10px;font-size:13px" onclick="retryInlineQuiz(''+brickId+'')">↺ Try Again</button>';
+    fb.innerHTML=`<strong>✗ Not quite.</strong> ${brick.quiz.feedback}<br><button class="btn btn-outline" style="margin-top:10px;font-size:13px" onclick="retryInlineQuiz('${brickId}')">↺ Try Again</button>`;
     fb.style.display='block';
   }
 };
