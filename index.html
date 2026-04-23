@@ -487,11 +487,8 @@ window.doResetPassword=async function(){
   if(pwd!==pwd2){errEl.textContent='Passwords do not match.';return;}
   const{error}=await db.auth.updateUser({password:pwd});
   if(error){errEl.textContent='Error: '+error.message;return;}
-  recoveryMode=false;
-  document.getElementById('reset-overlay').style.display='none';
-  // USER_UPDATED event will handle the rest, but as fallback:
   const{data:{session:s}}=await db.auth.getSession();
-  if(s){currentUser=s.user;await loadUserData();hideAuthOverlay();if(!state.profile?.name){showNameModal();}else{render();}}
+  await exitRecoveryMode(s);
 };
 function showNameModal(){
   document.getElementById('name-modal').classList.remove('hidden');
@@ -2337,31 +2334,55 @@ window.setCaseQuery = function(v){
 // INIT
 // ============================================================
 let recoveryMode=false;
+async function enterRecoveryMode(){
+  recoveryMode=true;
+  document.getElementById('reset-overlay').style.display='flex';
+  document.getElementById('auth-overlay').classList.add('hidden');
+}
+async function exitRecoveryMode(session){
+  recoveryMode=false;
+  document.getElementById('reset-overlay').style.display='none';
+  if(session){currentUser=session.user;await loadUserData();hideAuthOverlay();if(!state.profile?.name){showNameModal();}else{render();}}
+}
 async function init(){
-  // Detect recovery link from URL before any auth runs
   const params=new URLSearchParams(window.location.search);
   const hashParams=new URLSearchParams(window.location.hash.replace('#',''));
-  if(params.get('type')==='recovery'||hashParams.get('type')==='recovery'||params.has('code')){
-    recoveryMode=true;
-    document.getElementById('reset-overlay').style.display='flex';
+  const code=params.get('code');
+  const hashType=hashParams.get('type');
+
+  // Handle PKCE recovery code in URL
+  if(code){
+    try{
+      const{data,error}=await db.auth.exchangeCodeForSession(code);
+      if(!error&&data?.session){
+        // Clear code from URL
+        window.history.replaceState({},'',window.location.pathname);
+        // Check if this was a recovery session
+        const sessionType=data?.session?.user?.aud;
+        await enterRecoveryMode();
+        return;
+      }
+    }catch(e){}
+  }
+
+  // Handle implicit flow recovery token in hash
+  if(hashType==='recovery'){
+    await enterRecoveryMode();
+    return;
   }
 
   db.auth.onAuthStateChange(async(event,session)=>{
     if(event==='PASSWORD_RECOVERY'){
-      recoveryMode=true;
-      document.getElementById('reset-overlay').style.display='flex';
-      document.getElementById('auth-overlay').classList.add('hidden');
+      await enterRecoveryMode();
     } else if(event==='SIGNED_IN'&&session){
-      if(recoveryMode) return; // stay on reset form until password is updated
+      if(recoveryMode) return;
       document.getElementById('reset-overlay').style.display='none';
       currentUser=session.user;
       await loadUserData();
       hideAuthOverlay();
       if(!state.profile?.name){showNameModal();}else{render();}
     } else if(event==='USER_UPDATED'){
-      recoveryMode=false;
-      document.getElementById('reset-overlay').style.display='none';
-      if(session){currentUser=session.user;await loadUserData();hideAuthOverlay();if(!state.profile?.name){showNameModal();}else{render();}}
+      await exitRecoveryMode(session);
     } else if(event==='SIGNED_OUT'){
       currentUser=null;
       showAuthOverlay();
@@ -2369,12 +2390,12 @@ async function init(){
   });
 
   const{data:{session}}=await db.auth.getSession();
-  if(session&&!recoveryMode){
+  if(session){
     currentUser=session.user;
     await loadUserData();
     hideAuthOverlay();
     if(!state.profile?.name){showNameModal();}else{render();}
-  } else if(!session&&!recoveryMode){
+  } else {
     loadState();
     showAuthOverlay();
   }
